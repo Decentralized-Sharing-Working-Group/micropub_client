@@ -1,0 +1,12 @@
+html
+	body
+		br
+		label Enter your IndieAuth endpoint : 
+		br
+		form(action="/auth", method="get")
+			input(type="url", name="me", placeholder="https://")
+			input(type="submit", value="Log in")
+
+		- if(error)
+			p.error
+
