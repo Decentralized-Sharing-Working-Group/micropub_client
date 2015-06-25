@@ -3,9 +3,15 @@ html
 		strong(id="status") #{status}
 		br
 		br
+		span Send a note 
 		form(action="/send", method="post")
-			#noteSender
-				input(type="text", name="note")
-				input(type="submit", value="Send")
-
+			//#noteSender
+			textarea(id="note", name="note", rows=3)
+			input(type="submit", value="Send")
+		br
+		span Send a photo
+		form(action="/", method="post")
+			//#fileSender
+			input(type="file", name="photo", accept="image/*")
+			input(type="submit", value="Send")
 

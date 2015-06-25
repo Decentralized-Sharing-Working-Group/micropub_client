@@ -52,8 +52,15 @@ var parser = new htmlparser.Parser({
 
 
 app.get('/', function(req, res) {
+
 	res.render('index');
 });
+
+//for testing only
+app.post('/', function(req, res) {
+	console.log('image : ' + req.body.photo + ' - ' + req.params.photo + ' - ' + req.query.photo);
+});
+
 
 /* Queries the authorization endpoint */
 app.get('/auth', function(req, res) {
@@ -87,8 +94,28 @@ app.get('/callback_indieauth', function(req, res) {
 	console.log('redirect ok from ' + req.originalUrl);
 
 	params.code = req.query.code;
+	var reqParams = {
+		code: params.code,
+	  	redirect_uri: params.redirect_uri ,
+	  	client_id: params.client_id,
+	  	state: params.state
+	  };
 
-	request.post({
+	postRequest(endpoints.authorizationEndpoint, reqParams, null, false, function(code, body) {
+		if(code === 200) {
+			getToken(endpoints.tokenEndpoint, params, function(token) {
+				params.token = token;
+				console.log('token : ' + token);
+			});
+			res.render('sender', {status: 'Authentication successful'});
+		}
+		else {
+			res.render('sender', {status: 'Authentication failed'});
+		}
+	});
+
+
+	/*request.post({
 		url: endpoints.authorizationEndpoint,
 		form: {
 			code: params.code,
@@ -111,13 +138,51 @@ app.get('/callback_indieauth', function(req, res) {
 				res.render('sender', {status: 'Authentication failed'});
 			}
 		}
-	);
+	);*/
 });
 
 /* Micropub route */
 app.post('/send', function(req, res) {
-	console.log('note : ' + req.body.note);
 
+	var reqParams, multipart = false;
+
+	/* Note request */
+	if(req.body.note) {
+		console.log('note : ' + req.body.note);
+		reqParams = {
+			h: 'entry',
+			content: req.body.note
+		};
+	}
+	/* Image request */
+	else if(req.body.photo) {
+		console.log('photo : ' + req.body.photo);
+		reqParams = {
+			h: 'entry',
+			content: req.body.photo,
+			photo: 'photo1.jpg'
+		};
+		multipart = true;
+	}
+	else {
+		console.log('error');
+		res.render('sender', {status: 'Sending failure'});
+	}
+
+	
+	var header = {Authorization: 'Bearer ' + params.token};
+
+	postRequest(endpoints.micropubEndpoint, reqParams, header, multipart, function(code, body) {
+		if(code === 302) {
+			console.log('Note sent');
+			res.render('sender', {status: 'Note sent'});
+		}
+		else {
+			console.log('body : ' + body);
+			res.render('sender', {status: 'Sending failure'});
+		}
+	});
+/*
 	request.post({
 		url: endpoints.micropubEndpoint,
 		form: {
@@ -137,7 +202,7 @@ app.post('/send', function(req, res) {
 				res.render('sender', {status: 'Sending failure'});
 			}
 		}
-	);
+	);*/
 
 });
 
@@ -161,6 +226,32 @@ var getToken = function(endpoint, parameters, callback) {
 		}
 	);
 };
+
+var postRequest = function(endpoint, formValues, headers, multipart, callback) {
+
+	if(!multipart) {
+		request.post({
+			url: endpoint,
+			form: formValues,
+			headers: headers
+			}, function(err, response, body) {
+				console.log('response : ' + JSON.stringify(response));
+				callback(response.statusCode, body);
+			}
+		);
+	}
+	else {
+		request.post({
+			url: endpoint,
+			formData: formValues,
+			headers: headers
+			}, function(err, response, body) {
+				console.log('response : ' + JSON.stringify(response));
+				callback(response.statusCode, body);
+			}
+		);
+	}
+}
 
 
 var server = http.createServer(app).listen(port, host, function() {
