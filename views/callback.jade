@@ -2,5 +2,12 @@ html
 	body
 	if (auth) 
 		h3 Authentication successful !
+		form
+			#filePicker
+				input(type="file", name="file-picker")
+				input(type="submit", value="Send")
+
+
 	else
 		h3 Authentication failed
+

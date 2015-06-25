@@ -1,0 +1,11 @@
+html
+	body
+		strong(id="status") #{status}
+		br
+		br
+		form(action="/send", method="post")
+			#noteSender
+				input(type="text", name="note")
+				input(type="submit", value="Send")
+
+
