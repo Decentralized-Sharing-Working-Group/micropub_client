@@ -10,8 +10,8 @@ html
 			input(type="submit", value="Send")
 		br
 		span Send a photo
-		form(action="/", method="post")
+		form(action="/send", enctype="multipart/form-data", method="post")
 			//#fileSender
-			input(type="file", name="photo", accept="image/*")
+			input(type="file", name="photo")
 			input(type="submit", value="Send")
 

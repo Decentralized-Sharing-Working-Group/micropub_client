@@ -5,7 +5,9 @@ var express = require('express'),
  htmlparser = require("htmlparser2");
  request = require('request'),
  FormUrlencoded = require('form-urlencoded'),
- bodyParser = require('body-parser');
+ bodyParser = require('body-parser'), 
+ fs = require('fs'), 
+ formidable = require('formidable');
 
 var port = process.env.PORT || 8080,
  host = process.env.HOST || "127.0.0.1", 
@@ -58,7 +60,22 @@ app.get('/', function(req, res) {
 
 //for testing only
 app.post('/', function(req, res) {
-	console.log('image : ' + req.body.photo + ' - ' + req.params.photo + ' - ' + req.query.photo);
+	console.log('content-type : ' + req.headers['content-type']);
+	if(req.headers['content-type'].indexOf("multipart/form-data") > -1)
+		console.log("win");
+
+	form = new formidable.IncomingForm();
+	form.parse(req, function(err, fields, files) {
+		console.log('files : ' + JSON.stringify(files));
+		console.log('fields : ' + JSON.stringify(files));
+		stream = fs.createReadStream(files['photo'].path);
+		
+		console.log('image : ' + files['photo'].path);
+	});
+});
+app.get('/test', function(req, res) {
+
+	res.render('sender', {status: 'test'});
 });
 
 
@@ -155,14 +172,17 @@ app.post('/send', function(req, res) {
 		};
 	}
 	/* Image request */
-	else if(req.body.photo) {
-		console.log('photo : ' + req.body.photo);
-		reqParams = {
-			h: 'entry',
-			content: req.body.photo,
-			photo: 'photo1.jpg'
-		};
-		multipart = true;
+	else if(req.headers['content-type'].indexOf("multipart/form-data") > -1) {
+		form = new formidable.IncomingForm();
+		form.parse(req, function(err, fields, files) {
+			stream = fs.createReadStream(files['photo'].path);
+			reqParams = {
+				h: 'entry',
+				content: files['photo'].path,
+				photo: stream
+			};
+			multipart = true;
+		});
 	}
 	else {
 		console.log('error');
@@ -171,10 +191,12 @@ app.post('/send', function(req, res) {
 
 	
 	var header = {Authorization: 'Bearer ' + params.token};
+	/* !! FIXME : reqParams null when multipart !! */
+	console.log('params : ' + reqParams);
 
 	postRequest(endpoints.micropubEndpoint, reqParams, header, multipart, function(code, body) {
 		if(code === 302) {
-			console.log('Note sent');
+			console.log('Data sent');
 			res.render('sender', {status: 'Note sent'});
 		}
 		else {
