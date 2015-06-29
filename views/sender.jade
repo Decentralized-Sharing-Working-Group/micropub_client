@@ -3,7 +3,7 @@ html
 		strong(id="status") #{status}
 		br
 		br
-		span Send a note 
+		span Send a simple note 
 		form(action="/send", method="post")
 			//#noteSender
 			textarea(id="note", name="note", rows=3)
@@ -11,7 +11,7 @@ html
 		br
 		span Send a photo
 		form(action="/send", enctype="multipart/form-data", method="post")
-			//#fileSender
-			input(type="file", name="photo")
+			textarea(id="notePhoto", name="notePhoto")
+			input(type="file", name="photo", accept="image/*")
 			input(type="submit", value="Send")
 

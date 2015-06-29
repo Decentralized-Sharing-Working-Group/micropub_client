@@ -7,6 +7,7 @@ var express = require('express'),
  FormUrlencoded = require('form-urlencoded'),
  bodyParser = require('body-parser'), 
  fs = require('fs'), 
+ Stream = require('stream');
  formidable = require('formidable');
 
 var port = process.env.PORT || 8080,
@@ -60,18 +61,6 @@ app.get('/', function(req, res) {
 
 //for testing only
 app.post('/', function(req, res) {
-	console.log('content-type : ' + req.headers['content-type']);
-	if(req.headers['content-type'].indexOf("multipart/form-data") > -1)
-		console.log("win");
-
-	form = new formidable.IncomingForm();
-	form.parse(req, function(err, fields, files) {
-		console.log('files : ' + JSON.stringify(files));
-		console.log('fields : ' + JSON.stringify(files));
-		stream = fs.createReadStream(files['photo'].path);
-		
-		console.log('image : ' + files['photo'].path);
-	});
 });
 app.get('/test', function(req, res) {
 
@@ -130,38 +119,12 @@ app.get('/callback_indieauth', function(req, res) {
 			res.render('sender', {status: 'Authentication failed'});
 		}
 	});
-
-
-	/*request.post({
-		url: endpoints.authorizationEndpoint,
-		form: {
-			code: params.code,
-		  	redirect_uri: params.redirect_uri ,
-		  	client_id: params.client_id,
-		  	state: params.state
-		}},
-		function(err, response, body) {
-			if (!err && response.statusCode == 200) {
-				console.log('server response : ' + body);
-				getToken(endpoints.tokenEndpoint, params, function(token) {
-					params.token = token;
-					console.log('token : ' + token);
-				});
-				res.render('sender', {status: 'Authentication successful'});
-				
-			}
-			else {
-				console.log('server response : ' + body);
-				res.render('sender', {status: 'Authentication failed'});
-			}
-		}
-	);*/
 });
 
 /* Micropub route */
 app.post('/send', function(req, res) {
 
-	var reqParams, multipart = false;
+	var reqParams;
 
 	/* Note request */
 	if(req.body.note) {
@@ -170,62 +133,49 @@ app.post('/send', function(req, res) {
 			h: 'entry',
 			content: req.body.note
 		};
+		send(endpoints.micropubEndpoint, reqParams, false);
 	}
 	/* Image request */
 	else if(req.headers['content-type'].indexOf("multipart/form-data") > -1) {
 		form = new formidable.IncomingForm();
 		form.parse(req, function(err, fields, files) {
 			stream = fs.createReadStream(files['photo'].path);
+
 			reqParams = {
 				h: 'entry',
-				content: files['photo'].path,
+				content: fields.notePhoto,
 				photo: stream
 			};
-			multipart = true;
-		});
+				//console.log('params : ' + JSON.stringify(reqParams));
+			send(endpoints.micropubEndpoint, reqParams, true);
+    	
+			stream.on('error', function(err) {
+    			console.log('error ' + err);
+    		});
+    	});
 	}
+
 	else {
 		console.log('error');
 		res.render('sender', {status: 'Sending failure'});
 	}
 
-	
-	var header = {Authorization: 'Bearer ' + params.token};
-	/* !! FIXME : reqParams null when multipart !! */
-	console.log('params : ' + reqParams);
 
-	postRequest(endpoints.micropubEndpoint, reqParams, header, multipart, function(code, body) {
-		if(code === 302) {
-			console.log('Data sent');
-			res.render('sender', {status: 'Note sent'});
-		}
-		else {
-			console.log('body : ' + body);
-			res.render('sender', {status: 'Sending failure'});
-		}
-	});
-/*
-	request.post({
-		url: endpoints.micropubEndpoint,
-		form: {
-			h: 'entry',
-			content: req.body.note
-		},
-		headers: {
-    		'Authorization': 'Bearer ' + params.token
-  		}
-		}, function(err, response, body) {
-			if (!err && response.statusCode == 302) {
-				res.render('sender', {status: 'Note sent'});
+	var send = function(endpoint, parameters, multipart) {
+
+		var header = {Authorization: 'Bearer ' + params.token};
+
+		postRequest(endpoints.micropubEndpoint, reqParams, header, multipart, function(code, body) {
+			if(code === 302) {
+				console.log('Data sent');
+				res.render('sender', {status: (multipart ? 'Photo':'Note') + ' sent'});
 			}
 			else {
-				console.log('code : ' + response.statusCode);
-				console.log('response : ' + JSON.stringify(response));
+				console.log('code : ' + code + ' - body : ' + body);
 				res.render('sender', {status: 'Sending failure'});
 			}
-		}
-	);*/
-
+		});
+	};
 });
 
 
@@ -281,3 +231,5 @@ var server = http.createServer(app).listen(port, host, function() {
               host, port, app.get('env'));
 
 });
+
+
