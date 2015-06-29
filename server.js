@@ -126,6 +126,21 @@ app.post('/send', function(req, res) {
 
 	var reqParams;
 
+	var send = function(endpoint, parameters, multipart) {
+		var header = {Authorization: 'Bearer ' + params.token};
+
+		postRequest(endpoints.micropubEndpoint, reqParams, header, multipart, function(code, body) {
+			if(code === 302) {
+				console.log('Data sent');
+				res.render('sender', {status: (multipart ? 'Photo':'Note') + ' sent'});
+			}
+			else {
+				console.log('code : ' + code + ' - body : ' + body);
+				res.render('sender', {status: 'Sending failure'});
+			}
+		});
+	};
+
 	/* Note request */
 	if(req.body.note) {
 		console.log('note : ' + req.body.note);
@@ -159,23 +174,6 @@ app.post('/send', function(req, res) {
 		console.log('error');
 		res.render('sender', {status: 'Sending failure'});
 	}
-
-
-	var send = function(endpoint, parameters, multipart) {
-
-		var header = {Authorization: 'Bearer ' + params.token};
-
-		postRequest(endpoints.micropubEndpoint, reqParams, header, multipart, function(code, body) {
-			if(code === 302) {
-				console.log('Data sent');
-				res.render('sender', {status: (multipart ? 'Photo':'Note') + ' sent'});
-			}
-			else {
-				console.log('code : ' + code + ' - body : ' + body);
-				res.render('sender', {status: 'Sending failure'});
-			}
-		});
-	};
 });
 
 
@@ -201,28 +199,21 @@ var getToken = function(endpoint, parameters, callback) {
 
 var postRequest = function(endpoint, formValues, headers, multipart, callback) {
 
-	if(!multipart) {
-		request.post({
-			url: endpoint,
-			form: formValues,
-			headers: headers
-			}, function(err, response, body) {
-				console.log('response : ' + JSON.stringify(response));
-				callback(response.statusCode, body);
-			}
-		);
-	}
-	else {
-		request.post({
-			url: endpoint,
-			formData: formValues,
-			headers: headers
-			}, function(err, response, body) {
-				console.log('response : ' + JSON.stringify(response));
-				callback(response.statusCode, body);
-			}
-		);
-	}
+	var postParams = new PostParameters(endpoint, formValues, headers, multipart);
+	request.post(postParams, function(err, response, body) {
+		console.log('response : ' + JSON.stringify(response));
+		callback(response.statusCode, body);
+	});
+}
+
+
+function PostParameters(url, formValues, headers, multipart) {
+	this.url = url;
+	if(multipart)
+		this.form = formValues;
+	else
+		this.formData = formValues;
+	this.headers = headers;
 }
 
 
