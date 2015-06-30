@@ -36,7 +36,9 @@ var app = express();
 app.set('view engine', 'jade');
 app.use(bodyParser.urlencoded({     
 	extended: true
-})); 
+}))
+.use(express.static('public'));
+
 
 /* Endpoint discovery */
 var parser = new htmlparser.Parser({
@@ -61,6 +63,7 @@ app.get('/', function(req, res) {
 
 //for testing only
 app.post('/', function(req, res) {
+
 });
 app.get('/test', function(req, res) {
 
@@ -71,7 +74,6 @@ app.get('/test', function(req, res) {
 /* Queries the authorization endpoint */
 app.get('/auth', function(req, res) {
 	var url = req.query.me;
-	console.log('url : ' + url);
 	request(url, function (error, response, body) {
 		if (!error && response.statusCode == 200) {
 			parser.write(body);
@@ -97,8 +99,6 @@ app.get('/auth', function(req, res) {
 
 /* The authorization endpoint redirects here */
 app.get('/callback_indieauth', function(req, res) {
-	console.log('redirect ok from ' + req.originalUrl);
-
 	params.code = req.query.code;
 	var reqParams = {
 		code: params.code,
@@ -126,10 +126,9 @@ app.post('/send', function(req, res) {
 
 	var reqParams;
 
-	var send = function(endpoint, parameters, multipart) {
+	var send = function(endpoint, parameters, multipart, stream) {
 		var header = {Authorization: 'Bearer ' + params.token};
-
-		postRequest(endpoints.micropubEndpoint, reqParams, header, multipart, function(code, body) {
+		postRequest(endpoints.micropubEndpoint, parameters, header, multipart, function(code, body) {
 			if(code === 302) {
 				console.log('Data sent');
 				res.render('sender', {status: (multipart ? 'Photo':'Note') + ' sent'});
@@ -162,7 +161,7 @@ app.post('/send', function(req, res) {
 				photo: stream
 			};
 				//console.log('params : ' + JSON.stringify(reqParams));
-			send(endpoints.micropubEndpoint, reqParams, true);
+			send(endpoints.micropubEndpoint, reqParams, true, stream);
     	
 			stream.on('error', function(err) {
     			console.log('error ' + err);
@@ -210,9 +209,9 @@ var postRequest = function(endpoint, formValues, headers, multipart, callback) {
 function PostParameters(url, formValues, headers, multipart) {
 	this.url = url;
 	if(multipart)
-		this.form = formValues;
-	else
 		this.formData = formValues;
+	else
+		this.form = formValues;
 	this.headers = headers;
 }
 

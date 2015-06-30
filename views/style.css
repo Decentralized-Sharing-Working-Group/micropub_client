@@ -1,0 +1,8 @@
+#photoBlock {
+	display: inline-block;
+}
+
+textarea {
+    width: 300px;
+    height: 5em;
+}

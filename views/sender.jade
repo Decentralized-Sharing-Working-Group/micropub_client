@@ -1,4 +1,7 @@
+doctype html
 html
+	head
+		link(rel="stylesheet", type="text/css", href="/css/style.css")
 	body
 		strong(id="status") #{status}
 		br
@@ -11,7 +14,8 @@ html
 		br
 		span Send a photo
 		form(action="/send", enctype="multipart/form-data", method="post")
-			textarea(id="notePhoto", name="notePhoto")
-			input(type="file", name="photo", accept="image/*")
-			input(type="submit", value="Send")
+			#photoBlock
+				textarea(id="notePhoto", name="notePhoto")
+				input(type="file", name="photo", accept="image/*")
+				input(type="submit", value="Send")
 
