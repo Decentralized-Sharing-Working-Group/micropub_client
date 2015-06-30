@@ -1,10 +1,10 @@
 # micropub_client
 Basic Micropub client in Node.js 
 
-Implements the [IndieAuth](https://indiewebcamp.com/IndieAuthProtocol) protocol
+Uses the [IndieAuth](https://indiewebcamp.com/IndieAuthProtocol) protocol to authenticate, and [Micropub](https://indiewebcamp.com/Micropub) to send notes and photos 
 
 ##Prerequisites
-* A profile page with an IndieAuth and a Micropub endpoint specified. See [here](https://indiewebcamp.com/Micropub)
+* A profile page with an IndieAuth and a Micropub endpoint specified. 
 * Node.js installed
 
 ## Installation and run
